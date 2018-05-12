@@ -1,8 +1,6 @@
 package com.example.teju.med_hackaton;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Handler;
@@ -10,7 +8,6 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
 import com.jjoe64.graphview.GraphView;
@@ -24,7 +21,7 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity {
     private TextView tv_sound_intensity;
     private MediaRecorder mRecorder = null;
-    private Vibrator v;
+    private Vibrator vibrator;
     private final Timer timer = new Timer();
     private  final Handler handler = new Handler();
     GraphView graph;
@@ -34,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
         tv_sound_intensity = findViewById(R.id.tv_sound_intensity);
 
@@ -42,11 +39,6 @@ public class MainActivity extends AppCompatActivity {
 
         startWork();
         startGraph();
-
-
-
-
-
     }
 
 
@@ -76,8 +68,11 @@ public class MainActivity extends AppCompatActivity {
                 handler.post(new Runnable() {
 
                     public void run() {
-                        tv_sound_intensity.setText(String.valueOf(getAmplitude()));
-//                        vibrate();
+                        if (getAmplitude()>10000.0){
+                            vibrate();
+                        }
+//                        tv_sound_intensity.setText(String.valueOf(getAmplitude()));
+
                     }
                 });
             }
@@ -88,10 +83,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void vibrate(){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+            vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
         }else{
             //deprecated in API 26
-            v.vibrate(500);
+            vibrator.vibrate(500);
         }
     }
 
