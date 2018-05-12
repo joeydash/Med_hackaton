@@ -15,6 +15,7 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -24,6 +25,9 @@ public class MainActivity extends AppCompatActivity {
     private Vibrator vibrator;
     private final Timer timer = new Timer();
     private  final Handler handler = new Handler();
+    private int count = 40;
+    private DataPoint[] values = new DataPoint[count];
+
     GraphView graph;
     LineGraphSeries<DataPoint> series;
 
@@ -34,10 +38,11 @@ public class MainActivity extends AppCompatActivity {
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
         tv_sound_intensity = findViewById(R.id.tv_sound_intensity);
+        graph = findViewById(R.id.graph);
 
         initiateMichrophone();
-
         startWork();
+        initiateGraphDataPoints();
         startGraph();
     }
 
@@ -50,13 +55,27 @@ public class MainActivity extends AppCompatActivity {
         timer.purge();
 
     }
+    public void initiateGraphDataPoints(){
+        for (int i=0; i<count; i++) {
+            double x = 0.0;
+            double y = 0.0;
+            DataPoint v = new DataPoint(x, y);
+            values[i] = v;
+        }
+    }
+
     public void startGraph(){
-        graph = (GraphView) findViewById(R.id.graph);
-        series = new LineGraphSeries<>(new DataPoint[] {
-                new DataPoint(0, 1),
-                new DataPoint(1, 5),
-                new DataPoint(2, 3)
-        });
+
+        series = new LineGraphSeries<>(values);
+        graph.addSeries(series);
+    }
+    public void updateGraph(double x,double y){
+        DataPoint v = new DataPoint(x, y);
+        for (int i=1; i<count; i++) {
+            values[i-1] = values[i];
+        }
+        values[count-1] = v;
+        series = new LineGraphSeries<>(values);
         graph.addSeries(series);
     }
 
@@ -68,11 +87,13 @@ public class MainActivity extends AppCompatActivity {
                 handler.post(new Runnable() {
 
                     public void run() {
-                        if (getAmplitude()>10000.0){
+                        double sound_intensity = getAmplitude();
+                        if (sound_intensity>10000.0){
                             vibrate();
                         }
-//                        tv_sound_intensity.setText(String.valueOf(getAmplitude()));
-
+                        Long tsLong = System.currentTimeMillis()/1000;
+                        updateGraph((double)tsLong,sound_intensity);
+                        tv_sound_intensity.setText(String.valueOf(sound_intensity));
                     }
                 });
             }
@@ -117,13 +138,10 @@ public class MainActivity extends AppCompatActivity {
     }
     public double getAmplitude() {
         if (mRecorder != null)
+
             return mRecorder.getMaxAmplitude();
         else
             return 0;
 
     }
-
-
-
-
 }
