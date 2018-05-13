@@ -1,6 +1,11 @@
 package com.example.teju.med_hackaton;
 
+import android.Manifest;
 import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Handler;
@@ -9,41 +14,90 @@ import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.LineGraphSeries;
+
+import com.intentfilter.androidpermissions.PermissionManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity {
+import antonkozyriatskyi.circularprogressindicator.CircularProgressIndicator;
+
+import static java.util.Collections.singleton;
+
+public class MainActivity extends AppCompatActivity implements SensorEventListener  {
+    private PermissionManager permissionManager;
+    private Context context;
     private TextView tv_sound_intensity;
+    private CircularProgressIndicator circularProgress;
     private MediaRecorder mRecorder = null;
     private Vibrator vibrator;
     private final Timer timer = new Timer();
     private  final Handler handler = new Handler();
-    private int count = 40;
-    private DataPoint[] values = new DataPoint[count];
+    SensorManager sensorManager;
+    private double ax,ay,az;
 
-    GraphView graph;
-    LineGraphSeries<DataPoint> series;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
+        context = this;
+        permissionManager = PermissionManager.getInstance(context);
+        getAllPermission();
+
+
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         tv_sound_intensity = findViewById(R.id.tv_sound_intensity);
-        graph = findViewById(R.id.graph);
+        circularProgress = findViewById(R.id.circular_progress);
+
+
+
+
+        sensorManager=(SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
 
         initiateMichrophone();
+        initiateProgressbar();
+
+
+
         startWork();
-        initiateGraphDataPoints();
-        startGraph();
+
+    }
+
+    private void getAllPermission() {
+        permissionManager.checkPermissions(singleton(Manifest.permission.RECORD_AUDIO), new PermissionManager.PermissionRequestListener() {
+            @Override
+            public void onPermissionGranted() {
+                Toast.makeText(context, "Record Audio Permissions Granted", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onPermissionDenied() {
+                Toast.makeText(context, "Record Audio Permissions Denied", Toast.LENGTH_SHORT).show();
+            }
+        });
+        permissionManager.checkPermissions(singleton(Manifest.permission.VIBRATE), new PermissionManager.PermissionRequestListener() {
+            @Override
+            public void onPermissionGranted() {
+                Toast.makeText(context, "Vibrate Permissions Granted", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onPermissionDenied() {
+                Toast.makeText(context, "Vibrate Permissions Denied", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+    }
+
+    private void initiateProgressbar() {
+        circularProgress.setMaxProgress(32000);
+        circularProgress.setCurrentProgress(0);
     }
 
 
@@ -55,29 +109,21 @@ public class MainActivity extends AppCompatActivity {
         timer.purge();
 
     }
-    public void initiateGraphDataPoints(){
-        for (int i=0; i<count; i++) {
-            double x = 0.0;
-            double y = 0.0;
-            DataPoint v = new DataPoint(x, y);
-            values[i] = v;
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType()==Sensor.TYPE_ACCELEROMETER){
+            ax=event.values[0];
+            ay=event.values[1];
+            az=event.values[2];
         }
     }
 
-    public void startGraph(){
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
-        series = new LineGraphSeries<>(values);
-        graph.addSeries(series);
     }
-    public void updateGraph(double x,double y){
-        DataPoint v = new DataPoint(x, y);
-        for (int i=1; i<count; i++) {
-            values[i-1] = values[i];
-        }
-        values[count-1] = v;
-        series = new LineGraphSeries<>(values);
-        graph.addSeries(series);
-    }
+
 
 
     public void startWork(){
@@ -91,9 +137,10 @@ public class MainActivity extends AppCompatActivity {
                         if (sound_intensity>10000.0){
                             vibrate();
                         }
-                        Long tsLong = System.currentTimeMillis()/1000;
-                        updateGraph((double)tsLong,sound_intensity);
-                        tv_sound_intensity.setText(String.valueOf(sound_intensity));
+                        circularProgress.setCurrentProgress((int) sound_intensity);
+                        String viewData = String.valueOf(sound_intensity)+"\n"+ax+"\n"+ay+"\n"+az;
+
+                        tv_sound_intensity.setText(viewData);
                     }
                 });
             }

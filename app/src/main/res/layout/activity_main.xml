@@ -12,12 +12,24 @@
         android:layout_height="wrap_content"
         android:text="Amplitude here!"
         android:layout_centerHorizontal="true"/>
+    <antonkozyriatskyi.circularprogressindicator.CircularProgressIndicator
+        android:id="@+id/circular_progress"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        app:progressColor="@color/colorPrimary"
+        app:progressBackgroundColor="#efefefef"
+        app:progressStrokeWidth="8dp"
+        app:drawDot="true"
+        app:dotColor="@color/colorAccent"
+        app:dotWidth="16dp"
+        app:textSize="24sp"
+        app:textColor="@color/colorPrimaryDark"
+        android:layout_centerInParent="true"/>
 
 
-    <com.jjoe64.graphview.GraphView
-        android:layout_below="@id/tv_sound_intensity"
-        android:layout_width="match_parent"
-        android:layout_height="200dip"
-        android:id="@+id/graph" />
+
 
 </RelativeLayout>
